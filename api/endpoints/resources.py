@@ -3,7 +3,7 @@ from database.utils import raise_exception
 from api.schemas.resources import ResourceIn, ResourceOut
 from database.actions.resources import (
     fetch_resources, search_resources, add_resource, 
-    delete_resource
+    delete_resource, fetch_library, view_resource
 )
 
 router = APIRouter()
@@ -22,6 +22,13 @@ async def find_resources(search_term: str | None):
     if not resources:
         raise_exception(404, "Resources not found")
     return resources
+
+@router.get("/resources-library", response_model=list[ResourceOut])
+async def show_library(student_id: str):
+    library = await fetch_library(student_id)
+    if not library:
+        raise_exception(404, "Library not found")
+    return library
 
 @router.post("/resources-add/", response_model=ResourceOut)
 async def new_resource(
@@ -43,6 +50,13 @@ async def new_resource(
         raise_exception(400, "Failed to add resource")
     
     return resource
+
+@router.post("/resources-view/")
+async def add_library(student_id: str, resource_id: str):
+    resource = await view_resource(student_id, resource_id)
+    if not resource:
+        raise_exception(404, "Resources not found")
+    return "Resource added to library"
 
 @router.delete("/resources-delete/")
 async def remove_resource(resource_id: str | None):

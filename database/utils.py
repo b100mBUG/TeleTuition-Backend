@@ -19,8 +19,8 @@ pwd_context = CryptContext(schemes=['bcrypt'], deprecated = "auto")
 def hash_pwd(password):
     return pwd_context.hash(password)
 
-def is_verified_pwd(hashed_pwd, inputted_pwd):
-    return pwd_context.verify(hashed_pwd, inputted_pwd)
+def is_verified_pwd(inputted_pwd, hashed_pwd):
+    return pwd_context.verify(inputted_pwd, hashed_pwd)
 
 def raise_exception(status_code: int | None, text: str | None):
     raise HTTPException(status_code=status_code, detail=text)

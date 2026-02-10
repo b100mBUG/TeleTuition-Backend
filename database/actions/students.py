@@ -33,6 +33,34 @@ async def add_student(student_details: dict | None):
     send_otp_email(new_student.student_email, otp)
     return new_student
 
+async def resend_otp(student_email: str):
+    async with async_session.begin() as session:
+        stmt = select(Student).where(Student.student_email == student_email)
+        result = await session.execute(stmt)
+        student = result.scalars().first()
+        if not student:
+            return None
+
+        otp_stmt = select(StudentEmailOTP).where(StudentEmailOTP.student_id == student.student_id)
+        otp_res = await session.execute(otp_stmt)
+        existing_otp = otp_res.scalars().first()
+        if existing_otp:
+            await session.delete(existing_otp)
+        try:
+            otp = generate_otp()
+            new_otp = StudentEmailOTP(
+                student_id=student.student_id,
+                otp_hash=hash_otp(otp),
+            )
+            session.add(new_otp)
+            await session.commit()
+
+            send_otp_email(student_email, otp)
+            return new_otp
+        except Exception as e:
+            return None
+        
+
 async def fetch_student(student_id: str | None):
     if not student_id:
         raise_exception(400, "Student ID is required")
@@ -83,34 +111,37 @@ async def edit_student(student_id: str | None, student_details: dict | None):
 async def signin_student(student_details: dict | None):
     if not student_details:
         raise_exception(400, "Student credentials required")
-    async with async_session.begin() as session:
-        stmt = select(Student).where(
-            Student.student_email == student_details.get("student_email")
-        )
+
+    email = student_details.get("student_email")
+    password = student_details.get("student_password")
+
+    if not email or not password:
+        raise_exception(400, "Email and password required")
+
+    async with async_session() as session:
+        stmt = select(Student).where(Student.student_email == email)
         result = await session.execute(stmt)
         student = result.scalars().first()
-        
-        if not student:
-            raise_exception(404, "Student not found")
-        
-        if not is_verified_pwd(student.student_password, student_details.get("student_password")):
-            raise_exception(404, "Failed to sign in")
-        
+
+        if not student or not is_verified_pwd(password, student.student_password):
+            raise_exception(401, "Invalid email or password")
+
         return student
 
-async def verify_student_otp(student_id: str | None, otp: str | None):
-    if not student_id:
-        raise_exception(400, "student ID required")
+
+async def verify_student_otp(student_email: str | None, otp: str | None):
+    if not student_email:
+        raise_exception(400, "student email required")
     if not otp:
         raise_exception(400, "OTP required")
 
     async with async_session() as session:
-        result = await session.execute(select(Student).where(Student.student_id == student_id))
+        result = await session.execute(select(Student).where(Student.student_email == student_email))
         student = result.scalars().first()
         if not student:
             raise_exception(404, "Student not found")
 
-        result = await session.execute(select(StudentEmailOTP).where(StudentEmailOTP.student_id == student_id))
+        result = await session.execute(select(StudentEmailOTP).where(StudentEmailOTP.student_id == student.student_id))
         hashed_otp = result.scalars().first()
         if not hashed_otp:
             raise_exception(404, "OTP not found")

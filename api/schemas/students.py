@@ -16,6 +16,7 @@ class StudentOut(BaseModel):
     student_email: Optional[EmailStr] = None
     student_about: Optional[str] = "Hey there, let's learn together!"
     student_profile: Optional[str] = None
+    email_verified: Optional[bool] = None
 
     class Config:
         from_attributes = True

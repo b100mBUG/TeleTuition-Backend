@@ -1,6 +1,6 @@
 from database.models import Resource, Tutorial
 from config import async_session
-from sqlalchemy import select
+from sqlalchemy import select, exists
 from database.utils import raise_exception
 from database.utils import upload_video, compress_video
 import asyncio
@@ -47,8 +47,19 @@ async def view_resource(student_id: str | None, resource_id: str | None):
     
     if not resource_id:
         raise_exception(400, "Resource ID is required")
+
     
     async with async_session.begin() as session:
+        stmt = select(
+            exists().where(
+                Tutorial.student_id == student_id,
+                Tutorial.resource_id == resource_id
+            )
+        )
+
+        if (await session.execute(stmt)).scalar():
+            raise_exception(400, "Resource already exists")
+
         new_tutorial = Tutorial(
             student_id = student_id,
             resource_id = resource_id
@@ -60,6 +71,20 @@ async def view_resource(student_id: str | None, resource_id: str | None):
             return new_tutorial
         except Exception as e:
             raise_exception(500, f"An error occurred: \n {e}")
+        return "Added resource"
+
+async def fetch_library(student_id: str):
+    async with async_session() as session:
+        stmt = (
+            select(Resource)
+            .join(Tutorial, Tutorial.resource_id == Resource.resource_id)
+            .where(Tutorial.student_id == student_id)
+        )
+
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+
 
 async def fetch_resources():
     async with async_session() as session:
