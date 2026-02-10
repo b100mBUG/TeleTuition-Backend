@@ -6,3 +6,6 @@ asyncpg
 pydantic
 pydantic[email]
 uvicorn
+cloudinary
+ffmpeg
+python-dotenv
