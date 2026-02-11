@@ -7,6 +7,6 @@ pydantic
 pydantic[email]
 uvicorn
 cloudinary
-ffmpeg
+ffmpeg-python
 python-dotenv
 python-multipart
