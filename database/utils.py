@@ -64,6 +64,7 @@ def send_otp_email(to_mail, otp):
 
 
 def compress_video(input_path, output_path, target_bitrate="700k", audio_bitrate="96k", preset="medium"):
+    print("Conpressing video...")
     try:
         (
             ffmpeg
@@ -94,6 +95,7 @@ cloudinary.config(
 )
 
 def upload_video(file_path: str) -> str:
+    print("Uploading video...")
     result = cloudinary.uploader.upload(
         file_path,
         resource_type="video",
