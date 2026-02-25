@@ -38,7 +38,7 @@ async def start_resend_otp(student_email: str):
     otp = await resend_otp(student_email)
     if not otp:
         raise_exception(400, "Failed to resend OTP")
-    return {"OTP resent"}
+    return {f"OTP resent: {otp}"}
 
 @router.put("/students-edit/", response_model=StudentOut)
 async def refactor_student(student_id: str | None, student_detail: StudentEdit):
